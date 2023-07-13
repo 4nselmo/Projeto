@@ -669,6 +669,7 @@
 
       ready: function() {
         // this.getJogadores();
+        console.log('aqui');
       },
 
     }).mount('#app')
