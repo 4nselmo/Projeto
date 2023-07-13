@@ -63,6 +63,15 @@
           </div>
         </div> --}}
         <br>
+        <div class="row">
+          <div class="col col-lg-3">
+            <label for="temporadas" class="col-form-label">Temporadas</label>
+            <select class="form-select" id="temporada" v-model="temporada">
+              <option value="" selected>Selecione a temporada</option>
+              <option v-for="temporada in temporadas" :value="temporada.id">@{{temporada.nome}}</option>
+            </select>
+          </div>
+        </div>
           <div> 
           <table class="table table-striped">
               <thead>
@@ -129,10 +138,17 @@
               <div class="modal-body">
                 <div class="row">
                   <div class="col col-lg-3">
+                    <label for="temporadas" class="col-form-label">Temporadas</label>
+                    <select class="form-select" id="temporada_gols_id" v-model="temporada_gols_id">
+                      <option value="" selected>Selecione a temporada</option>
+                      <option v-for="temporada in temporadas" :value="temporada.id">@{{temporada.nome}}</option>
+                    </select>
+                  </div>
+                  <div class="col col-lg-2">
                     <label for="gols" class="col-form-label">Quantidade de Gols</label>
                     <input type="number" name="gols" class="form-control" id="gols"/>
                   </div>
-                  <div class="col col-lg-3">
+                  <div class="col col-lg-2">
                     <label for="golsSofridos" class="col-form-label">Gols Sofridos</label>
                     <input type="number" name="golsSofridos" class="form-control" id="golsSofridos"/>
                   </div>
@@ -143,7 +159,7 @@
                       <option v-for="equipe in equipes" :value="equipe.id">@{{equipe.nome}}</option>
                     </select>
                   </div>
-                  <div class="col col-lg-3">
+                  <div class="col col-lg-2">
                     <label for="data" class="col-form-label">Data</label>
                     <input type="date" name="data" class="form-control" id="data"/>
                   </div>
@@ -207,6 +223,15 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
+                <div class="row">
+                  <div class="col col-lg-3">
+                    <label for="temporadas" class="col-form-label">Temporadas</label>
+                    <select class="form-select" id="temporada_estatistica_id" v-model="temporada_estatistica_id">
+                      <option value="" selected>Selecione a temporada</option>
+                      <option v-for="temporada in temporadas" :value="temporada.id">@{{temporada.nome}}</option>
+                    </select>
+                  </div>
+                </div>
                 <div class="row">
                   <table class="table table-striped">
                     <thead>
@@ -279,8 +304,9 @@
     createApp({
       data() {
         return {
-          jogadores:{!! json_encode($jogadores) !!},
+          jogadores:[],
           equipes:{!! json_encode($equipes) !!},
+          temporadas:{!! json_encode($temporadas)!!},
           jogador:'',
           jogadorId:'',
           jogadorGols:[],
@@ -290,7 +316,10 @@
           equipe: '',
           estatisticas:[],
           totalGolsMarcados:0,
-          totalGolsSofridos:0
+          totalGolsSofridos:0,
+          temporada:'',
+          temporada_gols_id:'',
+          temporada_estatistica_id:''
         }
       },
 
@@ -324,6 +353,8 @@
             this.jogadorId = '';
             document.getElementById('gols').value = '';
             document.getElementById('equipe').value = '';
+            $('#temporada_gols_id').val('');
+            document.getElementById('data').value = '';
           });
         },
 
@@ -442,10 +473,24 @@
           data = {
             _token: "{{ csrf_token() }}",
             jogadorId: jogadorId,
+            temporada_id: this.temporada
           };
           jQuery.get('getGolsJogador', data, res => {
             this.jogadorGols = res;
           });
+        },
+
+        getJogadores()
+        {
+          data = {
+            _token: "{{ csrf_token() }}",
+            temporada_id: this.temporada
+          }
+
+          jQuery.get('getJogadores', data, res => {
+            this.jogadores = res;
+          })
+
         },
 
         editGols(jogadorGols)
@@ -455,11 +500,22 @@
           document.getElementById('golsSofridos').value = jogadorGols.gols_sofridos;
           document.getElementById('equipe').value = jogadorGols.equipe_id;
           document.getElementById('data').value = jogadorGols.data;
-          console.log(jogadorGols.data);
+          document.getElementById('temporada_gols_id').value = jogadorGols.temporada_id;
         },
 
         validator()
         {
+          if(!$('#temporada_gols_id').val())
+          {
+            this.mensagemAlerta = 'O campo Temporada deve ser selecionado!';
+            $('#toastAlert').show();
+            setTimeout(function(){
+              $('#toastAlert').hide();
+              this.mensagemAlerta = '';
+            }, 5000);  
+            return false;
+          }
+
           if(!document.getElementById('gols').value && !document.getElementById('golsSofridos').value)
           {
             this.mensagemAlerta = 'O campo Gols Marcados ou Gols Sofridos deve ser preenchido!';
@@ -500,7 +556,8 @@
             data: document.getElementById('data').value,
             id: this.jogadorGolId,
             equipe_id: document.getElementById('equipe').value,
-            gols_sofridos: document.getElementById('golsSofridos').value
+            gols_sofridos: document.getElementById('golsSofridos').value,
+            temporada_id: document.getElementById('temporada_gols_id').value
           };
 
           return data;
@@ -539,14 +596,22 @@
         {
           this.getEstatisticas();
           $('#estatisticas').modal('show');
+          $('#estatisticas').on('shown.bs.modal', function (e) {
+            $('#temporada_estatistica_id').val('');
+          });
 
           $('#estatisticas').on('hidden.bs.modal', function(e){
+            $('#temporada_estatistica_id').val('');
           });
         },
 
         getEstatisticas()
         {
-          jQuery.get('getEstatisticas', res => {
+          data = {
+            _token: "{{ csrf_token() }}",
+            temporada_id: this.temporada_estatistica_id
+          }
+          jQuery.get('getEstatisticas', data, res => {
             this.estatisticas = res;
           });
         },
@@ -566,6 +631,15 @@
       }
 		},
     watch: {
+      temporada()
+      {
+        this.getJogadores();
+      },
+
+      temporada_estatistica_id()
+      {
+        this.getEstatisticas();
+      }
 
     },
 
@@ -589,12 +663,13 @@
           if(pr.gols)
             totalGolsMarcados += parseInt(pr.gols);
           });
-          console.log(totalGolsMarcados);
           return totalGolsMarcados;
         },
     },
 
       ready: function() {
+        // this.getJogadores();
+        console.log('aqui');
       },
 
     }).mount('#app')
