@@ -139,7 +139,7 @@
                 <div class="row">
                   <div class="col col-lg-3">
                     <label for="temporadas" class="col-form-label">Temporadas</label>
-                    <select class="form-select" id="temporada_gols_id" v-model="temporada_gols_id">
+                    <select class="form-select" id="temporada_gols_id" >
                       <option value="" selected>Selecione a temporada</option>
                       <option v-for="temporada in temporadas" :value="temporada.id">@{{temporada.nome}}</option>
                     </select>
@@ -327,7 +327,7 @@
         openModalJogador: function(jogador = '') {
           $('#jogadorModal').modal('show');
           $('#jogadorModal').on('shown.bs.modal', function (e) {
-            $('#equipe').val(2);
+            $('#equipe').val();
           });
 
           $('#jogadorModal').on('hidden.bs.modal', function (e) {
@@ -348,6 +348,9 @@
           this.jogadorId = jogadorId;
           this.getGolsJogador(jogadorId);
           $('#golsModal').modal('show');
+          $('#golsModal').on('shown.bs.modal', function (e) {
+            $('#temporada_gols_id').val('');
+          });
 
           $('#golsModal').on('hidden.bs.modal', function(e){
             this.jogadorId = '';
@@ -592,7 +595,7 @@
           });
         },
 
-        openModalEstatisticas: function(jogadorId)
+        openModalEstatisticas: function()
         {
           this.getEstatisticas();
           $('#estatisticas').modal('show');
@@ -609,7 +612,7 @@
         {
           data = {
             _token: "{{ csrf_token() }}",
-            temporada_id: this.temporada_estatistica_id
+            temporada_id: $('#temporada_estatistica_id').val()
           }
           jQuery.get('getEstatisticas', data, res => {
             this.estatisticas = res;
